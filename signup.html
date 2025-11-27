@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Automated Log Register Sign Up</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: url('https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1600&q=80') no-repeat center center fixed;
+      background-size: cover;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .signup-container {
+      width: 350px;
+      background: rgba(0, 0, 0, 0.75);
+      padding: 40px;
+      border-radius: 15px;
+      color: white;
+      box-shadow: 0 0 15px #00ffff;
+    }
+    h2 {
+      text-align: center;
+      color: #00ffff;
+      margin-bottom: 25px;
+    }
+    .input-box {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: #ccc;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-bottom: 2px solid #00ffff;
+      background: transparent;
+      color: white;
+      outline: none;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background: linear-gradient(90deg, #00ffff, #007bff);
+      border: none;
+      color: black;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: linear-gradient(90deg, #007bff, #00ffff);
+    }
+    p {
+      text-align: center;
+      margin-top: 15px;
+    }
+    a {
+      color: #00ffff;
+      text-decoration: none;
+    }
+    .message {
+      text-align: center;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="signup-container">
+    <h2>Create Account</h2>
+    <div class="input-box">
+      <label>Username</label>
+      <input type="text" id="newUsername" />
+    </div>
+    <div class="input-box">
+      <label>Password</label>
+      <input type="password" id="newPassword" />
+    </div>
+    <button onclick="signup()">Sign Up</button>
+    <p>Already have an account? <a href="index.html">Login</a></p>
+    <div class="message" id="message"></div>
+  </div>
+
+  <script>
+    function signup() {
+      const newUsername = document.getElementById("newUsername").value;
+      const newPassword = document.getElementById("newPassword").value;
+      const message = document.getElementById("message");
+
+      if (newUsername && newPassword) {
+        localStorage.setItem("username", newUsername);
+        localStorage.setItem("password", newPassword);
+        message.textContent = "✅ Account Created Successfully!";
+        message.style.color = "#00ff88";
+        setTimeout(() => {
+          window.location.href = "index.html";
+        }, 1000);
+      } else {
+        message.textContent = "⚠️ Please fill all fields.";
+        message.style.color = "yellow";
+      }
+    }
+  </script>
+</body>
+</html>

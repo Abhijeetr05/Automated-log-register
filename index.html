@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StarkTech Login Portal</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: url('image3.webp');
+      background-size: cover;
+      background-position: center;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .login-container {
+      width: 350px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 40px;
+      border-radius: 15px;
+      color: white;
+      box-shadow: 0 0 15px #00ffff;
+    }
+    h2 {
+      text-align: center;
+      color: #00ffff;
+      margin-bottom: 25px;
+    }
+    .input-box {
+      margin-bottom: 20px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-bottom: 2px solid #00ffff;
+      background: transparent;
+      color: white;
+      outline: none;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: #aaa;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background: linear-gradient(90deg, #00ffff, #007bff);
+      border: none;
+      color: black;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: linear-gradient(90deg, #007bff, #00ffff);
+    }
+    p {
+      text-align: center;
+      margin-top: 10px;
+    }
+    a {
+      color: #00ffff;
+      text-decoration: none;
+    }
+    .message {
+      text-align: center;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <h2> StarkTech Portal Login</h2>
+    <div class="input-box">
+      <label>Username</label>
+      <input type="text" id="username" required>
+    </div>
+    <div class="input-box">
+      <label>Password</label>
+      <input type="password" id="password" required>
+    </div>
+    <button onclick="login()">Login</button>
+    <p>Don't have an account? <a href="signup.html">Sign up</a></p>
+    <div class="message" id="message"></div>
+  </div>
+
+  <script>
+    function login() {
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
+      const message = document.getElementById("message");
+
+      const defaultUser = "StarkTech";
+      const defaultPass = "Ironman05";
+
+      const savedUser = localStorage.getItem("username");
+      const savedPass = localStorage.getItem("password");
+
+      if (
+        (username === defaultUser && password === defaultPass) ||
+        (username === savedUser && password === savedPass)
+      ) {
+        message.textContent = "✅ Login Successful! Redirecting...";
+        message.className = "message success";
+
+        // Store user info and redirect to Streamlit
+        localStorage.setItem("currentUser", username);
+
+        setTimeout(() => {
+          window.location.href = "dashboard.html"; // your Streamlit app URL
+        }, 1000);
+      } else {
+        message.textContent = "❌ Invalid Username or Password!";
+        message.className = "message error";
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Automated Log Register</title>
+
+  <!-- TensorFlow.js + COCO-SSD -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
+
+  <style>
+    :root {
+      --accent: #00ffff;
+      --accent2: #007bff;
+      --text: #e8f6ff;
+    }
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background: url('image3.webp') no-repeat center center fixed;
+      background-size: cover;
+      color: var(--text);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      backdrop-filter: blur(10px);
+      background: rgba(10, 15, 25, 0.75);
+      z-index: -1;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(15px);
+      padding: 15px 25px;
+      border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+      box-shadow: 0 0 25px rgba(0, 255, 255, 0.08);
+    }
+
+    .title { display: flex; align-items: center; gap: 12px; }
+    .logo {
+      width: 45px; height: 45px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; justify-content: center; align-items: center;
+      font-weight: bold; color: #000; font-size: 20px;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+    }
+    h1 { margin: 0; color: var(--accent); font-size: 22px; }
+    .subtitle { font-size: 12px; color: #9fdcf5; }
+
+    .status {
+      padding: 8px 14px; border-radius: 8px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(0,255,255,0.3);
+      font-weight: 600; font-size: 14px;
+    }
+    .status.running { color: #00ffbb; border-color: #00ffbb; }
+    .status.stopped { color: #ff6666; border-color: #ff6666; }
+
+    .btn {
+      padding: 8px 15px; border: none; border-radius: 6px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      color: black; font-weight: bold; cursor: pointer;
+      box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+    }
+    .btn.ghost {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(0, 255, 255, 0.4);
+      color: var(--text);
+    }
+
+    input[type="number"] {
+      width: 80px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(0,255,255,0.4);
+      border-radius: 6px;
+      color: var(--text);
+      padding: 6px;
+      font-size: 14px;
+    }
+
+    #clock {
+      font-size: 14px; color: #9fdcf5; margin-left: 15px; font-weight: 600;
+    }
+
+    main { flex: 1; display: flex; gap: 20px; padding: 20px; }
+    .col-left { flex: 3; }
+    .col-right { flex: 1.3; display: flex; flex-direction: column; gap: 15px; }
+
+    .panel, .card {
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(15px);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid rgba(0, 255, 255, 0.15);
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.05);
+    }
+
+    h2 { color: var(--accent); font-size: 18px; margin-bottom: 10px; }
+
+    .video-wrap {
+      position: relative; width: 100%; height: 75vh;
+      background: #000; border-radius: 10px; overflow: hidden;
+      display: flex; justify-content: center; align-items: center;
+      box-shadow: 0 0 25px rgba(0,255,255,0.1);
+    }
+    video, canvas { width: 100%; height: 100%; object-fit: cover; }
+    canvas { position: absolute; top: 0; left: 0; }
+
+    .controls { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+    th, td { padding: 8px; border-bottom: 1px solid rgba(0,255,255,0.1); }
+    th { color: var(--accent); }
+
+    .metric h3 { margin: 0; font-size: 16px; color: var(--accent); }
+    .metric p { margin: 5px 0 0; font-size: 18px; font-weight: bold; }
+
+    .footer { text-align: center; font-size: 13px; color: #9fcde6; margin-top: auto; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">
+      <div class="logo">👤</div>
+      <div>
+        <h1>Automated Log Register</h1>
+        <div class="subtitle">Real-Time Person Detection & Logging Dashboard</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;">
+      <span id="statusIndicator" class="status stopped">Stopped</span>
+      <span id="clock"></span>
+      <button id="logoutBtn" class="btn ghost" style="margin-left:10px;">Logout</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="col-left">
+      <div class="panel">
+        <h2>📹 Live Camera Feed</h2>
+        <div class="video-wrap">
+          <video id="webcam" autoplay muted playsinline></video>
+          <canvas id="overlayCanvas"></canvas>
+          <div id="videoMessage" style="position:absolute;color:#9fdcf5;">Press 'Start' to begin detection</div>
+        </div>
+        <div class="controls">
+          <button id="startBtn" class="btn">▶️ Start</button>
+          <button id="stopBtn" class="btn ghost">⏹️ Stop</button>
+          <label>Interval (minutes):</label>
+          <input type="number" id="intervalInput" min="0" step="0.1" value="1">
+        </div>
+      </div>
+    </div>
+
+    <div class="col-right">
+      <div class="card">
+        <h2>📊 Live Statistics</h2>
+        <div class="metric"><h3>👥 People Detected</h3><p id="peopleCount">0</p></div>
+        <div class="metric"><h3>⏱️ Last Log Time</h3><p id="lastLog">N/A</p></div>
+      </div>
+
+      <div class="card">
+        <h2>👤 User</h2>
+        <p id="userName" style="font-weight:700;color:var(--accent)"></p>
+      </div>
+
+      <div class="card">
+        <h2>📋 Detection Log</h2>
+        <table id="logTable">
+          <thead><tr><th>NAME</th><th>DATE</th><th>TIME</th><th>STATUS</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="controls">
+          <button id="downloadCsv" class="btn ghost">📥 Download CSV</button>
+          <button id="clearLog" class="btn ghost">🧹 Clear Log</button>
+        </div>
+      </div>
+
+      <div class="footer card">
+        <div>Runs automatically at your chosen interval ⏱️</div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const currentUser = localStorage.getItem('currentUser');
+    if (!currentUser) window.location.href = 'index.html';
+    else document.getElementById('userName').textContent = currentUser;
+
+    function updateClock(){
+      const now=new Date();
+      const time=now.toLocaleTimeString();
+      document.getElementById('clock').textContent="🕒 "+time;
+    }
+    setInterval(updateClock,1000);updateClock();
+
+    const video=document.getElementById('webcam'),
+          canvas=document.getElementById('overlayCanvas'),
+          ctx=canvas.getContext('2d'),
+          startBtn=document.getElementById('startBtn'),
+          stopBtn=document.getElementById('stopBtn'),
+          intervalInput=document.getElementById('intervalInput'),
+          peopleCountEl=document.getElementById('peopleCount'),
+          lastLogEl=document.getElementById('lastLog'),
+          logTbody=document.querySelector('#logTable tbody'),
+          downloadCsvBtn=document.getElementById('downloadCsv'),
+          clearLogBtn=document.getElementById('clearLog'),
+          logoutBtn=document.getElementById('logoutBtn'),
+          statusIndicator=document.getElementById('statusIndicator'),
+          videoMessage=document.getElementById('videoMessage');
+
+    let model=null,stream=null,detecting=false,intervalId=null,logs=JSON.parse(localStorage.getItem('detection_logs')||'[]'),lastDetectedCount=0;
+
+    function renderLogs(){
+      logTbody.innerHTML='';
+      for(let r of logs.slice().reverse()){
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td>${r.NAME}</td><td>${r.DATE}</td><td>${r.TIME}</td><td>${r.STATUS}</td>`;
+        logTbody.appendChild(tr);
+      }
+      lastLogEl.textContent=logs.length?logs[logs.length-1].TIME:'N/A';
+    }
+    renderLogs();
+
+    function addLog(name,status){
+      const n=new Date();
+      const row={NAME:name,DATE:n.toISOString().slice(0,10),TIME:n.toTimeString().slice(0,8),STATUS:status};
+      logs.push(row);
+      localStorage.setItem('detection_logs',JSON.stringify(logs));
+      renderLogs();
+    }
+
+    clearLogBtn.onclick=()=>{if(confirm('Clear logs?')){logs=[];localStorage.removeItem('detection_logs');renderLogs();}};
+    downloadCsvBtn.onclick=()=>{if(!logs.length){alert('No logs');return;}const csv='NAME,DATE,TIME,STATUS\n'+logs.map(r=>[r.NAME,r.DATE,r.TIME,r.STATUS].join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='log.csv';a.click();};
+    logoutBtn.onclick=()=>{localStorage.removeItem('currentUser');window.location.href='index.html';};
+
+    function setRunning(r){
+      if(r){statusIndicator.classList.replace('stopped','running');statusIndicator.textContent='Running';videoMessage.style.display='none';}
+      else{statusIndicator.classList.replace('running','stopped');statusIndicator.textContent='Stopped';videoMessage.style.display='block';}
+    }
+
+    async function loadModel(){model=await cocoSsd.load();}
+    loadModel();
+
+    async function startCamera(){
+      stream=await navigator.mediaDevices.getUserMedia({video:true});
+      video.srcObject=stream;
+      await video.play();
+      canvas.width=video.videoWidth;
+      canvas.height=video.videoHeight;
+    }
+
+    async function detectOnce(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      const preds=await model.detect(video);
+      const persons=preds.filter(p=>p.class==='person'&&p.score>0.5);
+      persons.forEach((p,i)=>{
+        const [x,y,w,h]=p.bbox;
+        ctx.strokeStyle='#00ffff';
+        ctx.lineWidth=2;
+        ctx.strokeRect(x,y,w,h);
+        ctx.fillStyle='transparent';
+        ctx.fillText(`Person_${i+1}`,x+5,y-5);
+      });
+      peopleCountEl.textContent=persons.length;
+      if(persons.length>lastDetectedCount)addLog('Person','ENTRY');
+      else if(persons.length<lastDetectedCount)addLog('Person','EXIT');
+      lastDetectedCount=persons.length;
+    }
+
+    startBtn.onclick=async()=>{
+      if(detecting)return;
+      let minutes=parseFloat(intervalInput.value)||1;
+      const interval=minutes*60000;
+      setRunning(true);
+      await startCamera();
+      detecting=true;
+      detectOnce();
+      intervalId=setInterval(detectOnce,interval);
+    };
+
+    stopBtn.onclick=()=>{
+      setRunning(false);
+      detecting=false;
+      clearInterval(intervalId);
+      if(stream)stream.getTracks().forEach(t=>t.stop());
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      peopleCountEl.textContent='0';
+      lastDetectedCount=0;
+    };
+  </script>
+</body>
+</html>
